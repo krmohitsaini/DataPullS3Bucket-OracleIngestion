@@ -1,7 +1,9 @@
+import os
+
 from download_data import download_csv_file, list_csv_files
 
 
-BUCKET_NAME = "replace-with-your-bucket-name"
+BUCKET_NAME = os.getenv("DEFAULT_BUCKET")
 S3_FOLDER_PREFIX = "replace-with-your-folder-prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
 FILE_NAME_TO_DOWNLOAD = "replace-with-file-name.csv"

@@ -16,13 +16,35 @@ pip install boto3
 
 ## AWS Credentials
 
-The script uses the default AWS credential lookup from `boto3`.
+The script can assume an AWS role using these environment variables:
 
-Any of these will work:
+```bash
+export ROLE_ARN="arn:aws:iam::123456789012:role/your-role"
+export ACCESS_KEY="your-access-key"
+export SECRET_KEY="your-secret-key"
+export SESSION_NAME="s3-csv-downloader-session"
+export DEFAULT_BUCKET="your-bucket-name"
+```
 
+PowerShell:
+
+```powershell
+$env:ROLE_ARN="arn:aws:iam::123456789012:role/your-role"
+$env:ACCESS_KEY="your-access-key"
+$env:SECRET_KEY="your-secret-key"
+$env:SESSION_NAME="s3-csv-downloader-session"
+$env:DEFAULT_BUCKET="your-bucket-name"
+```
+
+Do not hardcode real access keys in the Python files.
+
+If `ROLE_ARN` is present, the script uses `ACCESS_KEY` and `SECRET_KEY` to assume that role through AWS STS, then uses the temporary role credentials to access S3.
+
+If `ROLE_ARN` is not present, the script can still use:
+
+- `ACCESS_KEY` and `SECRET_KEY` directly
+- Standard `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 - AWS CLI credentials from `aws configure`
-- Environment variables such as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
-- AWS SSO/profile login
 - IAM role credentials when running on AWS
 
 ## Configure `main.py`
@@ -30,11 +52,12 @@ Any of these will work:
 Update these values in `main.py`:
 
 ```python
-BUCKET_NAME = "your-bucket-name"
 S3_FOLDER_PREFIX = "your/folder/prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
 FILE_NAME_TO_DOWNLOAD = "your-file.csv"
 ```
+
+`BUCKET_NAME` is read from the `DEFAULT_BUCKET` environment variable.
 
 Then run:
 
@@ -81,6 +104,19 @@ print(downloaded_path)
 ```
 
 The local directory is created automatically if it does not exist.
+
+You can also pass credentials directly if needed:
+
+```python
+csv_files = list_csv_files(
+    bucket_name="your-bucket-name",
+    prefix="your/folder/prefix/",
+    role_arn="arn:aws:iam::123456789012:role/your-role",
+    access_key="your-access-key",
+    secret_key="your-secret-key",
+    session_name="s3-csv-downloader-session",
+)
+```
 
 ## Notes
 
