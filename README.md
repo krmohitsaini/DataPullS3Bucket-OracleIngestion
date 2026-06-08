@@ -1,6 +1,6 @@
 # S3 CSV Downloader
 
-Simple Python utility to list CSV files from an S3 bucket folder/prefix and download a selected CSV file to a local directory.
+Simple Python utility to list CSV files from an S3 bucket folder/prefix and download date-based CSV files to a local directory.
 
 ## Requirements
 
@@ -54,10 +54,13 @@ Update these values in `main.py`:
 ```python
 S3_FOLDER_PREFIX = "your/folder/prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
-FILE_NAME_TO_DOWNLOAD = "your-file.csv"
+RUN_DATE = date.today()
+DAYS_TO_DOWNLOAD = 1
 ```
 
 `BUCKET_NAME` is read from the `DEFAULT_BUCKET` environment variable.
+
+`DAYS_TO_DOWNLOAD = 1` downloads only the file for `RUN_DATE`. Use a larger value for backfills. For example, `DAYS_TO_DOWNLOAD = 7` downloads files for `RUN_DATE` and the previous six days.
 
 Then run:
 
@@ -85,8 +88,46 @@ Each item contains:
 
 - `file_name`
 - `s3_key`
+- `file_date`
 - `last_modified`
 - `size_bytes`
+
+### Download files for a date period
+
+```python
+from datetime import date
+
+from download_data import download_csv_files_for_period
+
+downloaded_paths = download_csv_files_for_period(
+    bucket_name="your-bucket-name",
+    prefix="your/folder/prefix/",
+    local_directory="./downloaded_csv",
+    run_date=date.today(),
+    days_to_download=1,
+)
+
+for downloaded_path in downloaded_paths:
+    print(downloaded_path)
+```
+
+This finds CSV files that contain a date in the filename, such as:
+
+```text
+dynamo-oam-user-data-2026-06-08-040006.csv
+```
+
+Downloaded files are renamed locally to:
+
+```text
+dynamo_oam_YYYYMMDD.csv
+```
+
+For example:
+
+```text
+dynamo_oam_20260608.csv
+```
 
 ### Download one CSV file
 
@@ -121,5 +162,7 @@ csv_files = list_csv_files(
 ## Notes
 
 - `prefix` is the S3 folder path, for example `reports/daily/`.
-- The downloaded file is saved using only the CSV filename, not the full S3 folder path.
+- Date-based downloads look for the first `YYYY-MM-DD` value found in each CSV filename.
+- Date-based downloads save files as `dynamo_oam_YYYYMMDD.csv`.
+- Single-file downloads save using the original CSV filename unless you pass `local_file_name`.
 - Only files ending with `.csv` are listed or downloaded.

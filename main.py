@@ -1,12 +1,14 @@
 import os
+from datetime import date
 
-from download_data import download_csv_file, list_csv_files
+from download_data import download_csv_files_for_period, list_csv_files
 
 
 BUCKET_NAME = os.getenv("DEFAULT_BUCKET")
 S3_FOLDER_PREFIX = "replace-with-your-folder-prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
-FILE_NAME_TO_DOWNLOAD = "replace-with-file-name.csv"
+RUN_DATE = date.today()
+DAYS_TO_DOWNLOAD = 1
 
 
 def main() -> None:
@@ -16,18 +18,26 @@ def main() -> None:
     for csv_file in csv_files:
         print(
             f"- {csv_file['file_name']} "
-            f"(modified: {csv_file['last_modified']}, "
+            f"(file date: {csv_file['file_date']}, "
+            f"modified: {csv_file['last_modified']}, "
             f"size: {csv_file['size_bytes']} bytes)"
         )
 
-    downloaded_file = download_csv_file(
+    downloaded_files = download_csv_files_for_period(
         BUCKET_NAME,
         S3_FOLDER_PREFIX,
-        FILE_NAME_TO_DOWNLOAD,
         LOCAL_DIRECTORY,
+        RUN_DATE,
+        DAYS_TO_DOWNLOAD,
     )
 
-    print(f"\nDownloaded: {downloaded_file}")
+    if not downloaded_files:
+        print("\nNo CSV files matched the requested date range.")
+        return
+
+    print("\nDownloaded files:")
+    for downloaded_file in downloaded_files:
+        print(f"- {downloaded_file}")
 
 
 if __name__ == "__main__":
