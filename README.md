@@ -54,6 +54,7 @@ Update these values in `main.py`:
 ```python
 S3_FOLDER_PREFIX = "your/folder/prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
+PROCESSED_DIRECTORY = "Processed"
 RUN_DATE = date.today()
 DAYS_TO_DOWNLOAD = 1
 ```
@@ -67,6 +68,8 @@ Then run:
 ```bash
 python3 main.py
 ```
+
+The script downloads matching CSV files, then processes each downloaded file into `PROCESSED_DIRECTORY` using the same filename.
 
 ## Available Functions
 
@@ -146,6 +149,27 @@ print(downloaded_path)
 
 The local directory is created automatically if it does not exist.
 
+### Process a downloaded CSV file
+
+```python
+from process_data import process_csv_file
+
+processed_path = process_csv_file(
+    source_directory="./downloaded_csv",
+    file_name="dynamo_oam_20260609.csv",
+    processed_directory="Processed",
+)
+
+print(processed_path)
+```
+
+The processed file keeps the same filename and adds these columns immediately after `Created Date`:
+
+- `BP_STATUS`, left blank
+- `EFFECTIVE_DT`, filled for every row from the date in the filename
+
+For `dynamo_oam_20260609.csv`, `EFFECTIVE_DT` is written as `2026-06-09`.
+
 You can also pass credentials directly if needed:
 
 ```python
@@ -165,4 +189,5 @@ csv_files = list_csv_files(
 - Date-based downloads look for the first `YYYY-MM-DD` value found in each CSV filename.
 - Date-based downloads save files as `dynamo_oam_YYYYMMDD.csv`.
 - Single-file downloads save using the original CSV filename unless you pass `local_file_name`.
+- Processed files are saved with the same filename in `PROCESSED_DIRECTORY`.
 - Only files ending with `.csv` are listed or downloaded.
