@@ -2,13 +2,19 @@ import os
 from datetime import date
 
 from download_data import download_csv_files_for_period, list_csv_files
-from process_data import process_csv_file
+from push_files import push_files
 
 
 BUCKET_NAME = os.getenv("DEFAULT_BUCKET")
+ORACLE_USER = os.getenv("ORACLE_USER")
+ORACLE_PASSWORD = os.getenv("ORACLE_PASSWORD")
+ORACLE_DSN = os.getenv("ORACLE_DSN")
 S3_FOLDER_PREFIX = "replace-with-your-folder-prefix/"
 LOCAL_DIRECTORY = "./downloaded_csv"
 PROCESSED_DIRECTORY = "Processed"
+UPLOADED_DIRECTORY = "Uploaded"
+LOG_DIRECTORY = "Logs"
+INVALID_DIRECTORY = "Invalid"
 RUN_DATE = date.today()
 DAYS_TO_DOWNLOAD = 1
 
@@ -41,18 +47,37 @@ def main() -> None:
     for downloaded_file in downloaded_files:
         print(f"- {downloaded_file}")
 
-    processed_files = [
-        process_csv_file(
-            downloaded_file.parent,
-            downloaded_file.name,
-            PROCESSED_DIRECTORY,
-        )
-        for downloaded_file in downloaded_files
+    _validate_oracle_config()
+    push_files(
+        downloaded_files,
+        ORACLE_USER,
+        ORACLE_PASSWORD,
+        ORACLE_DSN,
+        processed_directory=PROCESSED_DIRECTORY,
+        uploaded_directory=UPLOADED_DIRECTORY,
+        log_directory=LOG_DIRECTORY,
+        invalid_directory=INVALID_DIRECTORY,
+    )
+
+    print("\nPushed downloaded files to Oracle.")
+
+
+def _validate_oracle_config() -> None:
+    missing_values = [
+        name
+        for name, value in {
+            "ORACLE_USER": ORACLE_USER,
+            "ORACLE_PASSWORD": ORACLE_PASSWORD,
+            "ORACLE_DSN": ORACLE_DSN,
+        }.items()
+        if not value
     ]
 
-    print("\nProcessed files:")
-    for processed_file in processed_files:
-        print(f"- {processed_file}")
+    if missing_values:
+        raise ValueError(
+            "Missing Oracle environment variables: "
+            + ", ".join(missing_values)
+        )
 
 
 if __name__ == "__main__":

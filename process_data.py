@@ -18,6 +18,12 @@ DATE_COLUMNS_TO_NORMALIZE = [
     "mob_first_login",
     "mob_last_login",
 ]
+COLUMN_RENAME_MAPPING = {
+    # "Current Column Name": "New Column Name",
+}
+LEFT_PAD_COLUMNS = (
+    # ("New Column Name", total_length),
+)
 EMPTY_DATE_VALUES = {"", "N/A", "NA", "NULL", "NONE"}
 
 __all__ = ["process_csv_file"]
@@ -34,15 +40,16 @@ def process_csv_file(
 
     with source_path.open("r", encoding="utf-8-sig", newline="") as source_file:
         reader = csv.DictReader(source_file)
-        fieldnames = _build_processed_fieldnames(reader.fieldnames)
+        source_fieldnames = _build_processed_fieldnames(reader.fieldnames)
+        output_fieldnames = _rename_fieldnames(source_fieldnames)
         rows = [
-            _build_processed_row(row, fieldnames, effective_date)
+            _build_processed_row(row, source_fieldnames, effective_date)
             for row in reader
         ]
 
     processed_path.parent.mkdir(parents=True, exist_ok=True)
     with processed_path.open("w", encoding="utf-8", newline="") as processed_file:
-        writer = csv.DictWriter(processed_file, fieldnames=fieldnames)
+        writer = csv.DictWriter(processed_file, fieldnames=output_fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
@@ -79,7 +86,36 @@ def _build_processed_row(
     _normalize_date_columns(processed_row)
     processed_row[BP_STATUS_COLUMN] = ""
     processed_row[EFFECTIVE_DT_COLUMN] = effective_date
-    return processed_row
+    renamed_row = _rename_row_columns(processed_row)
+    _left_pad_columns(renamed_row)
+    return renamed_row
+
+
+def _rename_fieldnames(fieldnames: list[str]) -> list[str]:
+    return [
+        COLUMN_RENAME_MAPPING.get(fieldname, fieldname)
+        for fieldname in fieldnames
+    ]
+
+
+def _rename_row_columns(row: dict[str, str]) -> dict[str, str]:
+    return {
+        COLUMN_RENAME_MAPPING.get(column_name, column_name): value
+        for column_name, value in row.items()
+    }
+
+
+def _left_pad_columns(row: dict[str, str]) -> None:
+    for column_name, total_length in LEFT_PAD_COLUMNS:
+        value = row.get(column_name)
+        if not value:
+            continue
+
+        cleaned_value = value.strip()
+        if cleaned_value.upper() in EMPTY_DATE_VALUES:
+            continue
+
+        row[column_name] = cleaned_value.zfill(total_length)
 
 
 def _normalize_date_columns(row: dict[str, str]) -> None:
