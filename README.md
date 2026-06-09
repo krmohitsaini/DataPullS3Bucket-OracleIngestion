@@ -170,6 +170,19 @@ The processed file keeps the same filename and adds these columns immediately af
 
 For `dynamo_oam_20260609.csv`, `EFFECTIVE_DT` is written as `2026-06-09`.
 
+Date columns are also normalized to `YYYY-MM-DD` with the time removed. Add or remove column names in `process_data.py`:
+
+```python
+DATE_COLUMNS_TO_NORMALIZE = [
+    "Last Login",
+    "Created Date",
+    "mob_first_login",
+    "mob_last_login",
+]
+```
+
+Values like `3/31/2025 10:29 AM`, `2026-03-13 11:36:08 PM CST`, and `2025-11-14 10:11:12 AM CDT` become `YYYY-MM-DD`. Values like `N/A` stay unchanged.
+
 You can also pass credentials directly if needed:
 
 ```python

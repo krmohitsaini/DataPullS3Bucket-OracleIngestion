@@ -11,6 +11,14 @@ BP_STATUS_COLUMN = "BP_STATUS"
 EFFECTIVE_DT_COLUMN = "EFFECTIVE_DT"
 DATE_WITH_DASHES_PATTERN = re.compile(r"\d{4}-\d{2}-\d{2}")
 DATE_WITHOUT_DASHES_PATTERN = re.compile(r"\d{8}")
+DATE_WITH_SLASHES_PATTERN = re.compile(r"\d{1,2}/\d{1,2}/\d{4}")
+DATE_COLUMNS_TO_NORMALIZE = [
+    "Last Login",
+    "Created Date",
+    "mob_first_login",
+    "mob_last_login",
+]
+EMPTY_DATE_VALUES = {"", "N/A", "NA", "NULL", "NONE"}
 
 __all__ = ["process_csv_file"]
 
@@ -68,9 +76,33 @@ def _build_processed_row(
     effective_date: str,
 ) -> dict[str, str]:
     processed_row = {fieldname: row.get(fieldname, "") for fieldname in fieldnames}
+    _normalize_date_columns(processed_row)
     processed_row[BP_STATUS_COLUMN] = ""
     processed_row[EFFECTIVE_DT_COLUMN] = effective_date
     return processed_row
+
+
+def _normalize_date_columns(row: dict[str, str]) -> None:
+    for column_name in DATE_COLUMNS_TO_NORMALIZE:
+        if column_name in row:
+            row[column_name] = _normalize_date_value(row[column_name])
+
+
+def _normalize_date_value(value: str) -> str:
+    cleaned_value = value.strip()
+    if cleaned_value.upper() in EMPTY_DATE_VALUES:
+        return cleaned_value
+
+    date_with_dashes = DATE_WITH_DASHES_PATTERN.search(cleaned_value)
+    if date_with_dashes:
+        return date_with_dashes.group()
+
+    date_with_slashes = DATE_WITH_SLASHES_PATTERN.search(cleaned_value)
+    if date_with_slashes:
+        parsed_date = datetime.strptime(date_with_slashes.group(), "%m/%d/%Y")
+        return parsed_date.strftime("%Y-%m-%d")
+
+    return cleaned_value
 
 
 def _extract_effective_date(file_name: str) -> str:
