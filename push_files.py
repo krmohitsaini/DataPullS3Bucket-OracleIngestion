@@ -10,7 +10,12 @@ from typing import Iterable
 import oracledb
 import pandas as pd
 
-from process_data import process_csv_file
+from process_data import (
+    COLUMN_RENAME_MAPPING,
+    DATE_COLUMNS_TO_NORMALIZE,
+    EFFECTIVE_DT_COLUMN,
+    process_csv_file,
+)
 
 
 ORACLE_IDENTIFIER = re.compile(r"^[A-Za-z][A-Za-z0-9_$#]*$")
@@ -27,6 +32,10 @@ COLUMN_NAME_REPLACEMENTS = {
 COLUMN_TYPE_OVERRIDES = {
     "BP_STATUS": "VARCHAR2(65)",
 }
+ORACLE_DATE_COLUMNS = [
+    EFFECTIVE_DT_COLUMN,
+    *DATE_COLUMNS_TO_NORMALIZE,
+]
 
 
 @dataclass(frozen=True)
@@ -129,6 +138,7 @@ def process_files(
             processed_directory,
         )
         dataframe = pd.read_csv(processed_path, dtype=str)
+        _convert_date_columns(dataframe)
         processed_files.setdefault(table_name, []).append(
             ProcessedFile(
                 source_path=source_path,
@@ -139,6 +149,16 @@ def process_files(
         )
 
     return processed_files
+
+
+def _convert_date_columns(dataframe: pd.DataFrame) -> None:
+    for column_name in ORACLE_DATE_COLUMNS:
+        output_column_name = COLUMN_RENAME_MAPPING.get(column_name, column_name)
+        if output_column_name in dataframe.columns:
+            dataframe[output_column_name] = pd.to_datetime(
+                dataframe[output_column_name],
+                errors="coerce",
+            )
 
 
 def push_processed_files(

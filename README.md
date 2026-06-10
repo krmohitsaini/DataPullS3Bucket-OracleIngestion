@@ -204,7 +204,7 @@ DATE_COLUMNS_TO_NORMALIZE = [
 ]
 ```
 
-Values like `3/31/2025 10:29 AM`, `2026-03-13 11:36:08 PM CST`, and `2025-11-14 10:11:12 AM CDT` become `YYYY-MM-DD`. Values like `N/A` stay unchanged.
+Values like `3/31/2025 10:29 AM`, `2026-03-13 11:36:08 PM CST`, and `2025-11-14 10:11:12 AM CDT` become `YYYY-MM-DD`. Values like `N/A`, blank, and `NULL` become blank in the processed CSV, then become Oracle `NULL` when pushed.
 
 Columns can be renamed in `process_data.py`. Missing source columns are ignored automatically:
 

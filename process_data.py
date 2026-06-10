@@ -26,7 +26,12 @@ LEFT_PAD_COLUMNS = (
 )
 EMPTY_DATE_VALUES = {"", "N/A", "NA", "NULL", "NONE"}
 
-__all__ = ["process_csv_file"]
+__all__ = [
+    "COLUMN_RENAME_MAPPING",
+    "DATE_COLUMNS_TO_NORMALIZE",
+    "EFFECTIVE_DT_COLUMN",
+    "process_csv_file",
+]
 
 
 def process_csv_file(
@@ -127,7 +132,7 @@ def _normalize_date_columns(row: dict[str, str]) -> None:
 def _normalize_date_value(value: str) -> str:
     cleaned_value = value.strip()
     if cleaned_value.upper() in EMPTY_DATE_VALUES:
-        return cleaned_value
+        return ""
 
     date_with_dashes = DATE_WITH_DASHES_PATTERN.search(cleaned_value)
     if date_with_dashes:
